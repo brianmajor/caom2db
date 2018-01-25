@@ -161,8 +161,6 @@ public interface SQLGenerator {
 
     String getObservationSelectSQL(Class c, Date minLastModified, Date maxLastModified, int depth);
     
-//    <T> String getSelectArtifactSQL(T artifactURI);
-
     ResultSetExtractor getObservationExtractor();
 
     RowMapper getObservationStateMapper();

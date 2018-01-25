@@ -736,7 +736,7 @@ public class BaseSQLGenerator implements SQLGenerator {
         return sb.toString();
     }
     
-    <T> String getSelectArtifactSQL(T artifactKey) {
+    <T> String getSelectArtifactSQL() {
         StringBuilder sb = new StringBuilder();
         sb.append("SELECT ");
         String[] cols = columnMap.get(Artifact.class);
@@ -749,9 +749,7 @@ public class BaseSQLGenerator implements SQLGenerator {
         sb.append(" FROM ");
         sb.append(getTable(Artifact.class));
         sb.append(" WHERE ");
-        sb.append("uri='");
-        sb.append(artifactKey.toString());
-        sb.append("'");
+        sb.append("uri=?");
         return sb.toString();
     }
     
@@ -1758,11 +1756,13 @@ public class BaseSQLGenerator implements SQLGenerator {
          */
         @Override
         public PreparedStatement createPreparedStatement(Connection conn) throws SQLException {
-            final String sql = getSelectArtifactSQL(key);
-
+            final String sql = getSelectArtifactSQL();
             log.debug(sql);
 
-            return conn.prepareStatement(sql);
+            final PreparedStatement preparedStatement = conn.prepareStatement(sql);
+            preparedStatement.setString(1, key.toString());
+
+            return preparedStatement;
         }
     }
 
