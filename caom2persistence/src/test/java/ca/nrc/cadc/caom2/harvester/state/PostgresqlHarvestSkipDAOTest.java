@@ -133,6 +133,7 @@ public class PostgresqlHarvestSkipDAOTest
         catch(Exception ex)
         {
             log.error("failed to init DataSource", ex);
+            throw ex;
         }
     }
 

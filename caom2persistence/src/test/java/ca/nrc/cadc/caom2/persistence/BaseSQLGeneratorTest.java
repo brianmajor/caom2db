@@ -374,4 +374,10 @@ public class BaseSQLGeneratorTest
             Assert.fail("unexpected exception: " + unexpected);
         }
     }
+
+    @Test
+    public void getEntityGet() {
+        final URI uri = URI.create("caom://myobservation/plane/artifactid");
+        gen.getEntityGet(Artifact.class, uri);
+    }
 }

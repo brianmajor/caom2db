@@ -183,10 +183,9 @@ public class ArtifactDAO extends AbstractCaomEntityDAO<Artifact> {
             throw new IllegalArgumentException("arg cannot be null");
         }
         JdbcTemplate jdbc = new JdbcTemplate(dataSource);
-        String sql = gen.getSelectArtifactSQL(artifactURI);
-        log.debug("sql: " + sql);
+        final EntityGet<Artifact> getter = gen.getEntityGet(Artifact.class, artifactURI);
         // No DB constraint for artifact URI to be unique
-        List<Artifact> artifacts = jdbc.query(sql, gen.getArtifactMapper());
+        List<Artifact> artifacts = getter.execute(jdbc);
         if (artifacts != null && artifacts.size() > 0) {
             return artifacts.get(0);
         }

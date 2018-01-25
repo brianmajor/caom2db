@@ -736,8 +736,7 @@ public class BaseSQLGenerator implements SQLGenerator {
         return sb.toString();
     }
     
-    @Override
-    public String getSelectArtifactSQL(URI artifactURI) {
+    <T> String getSelectArtifactSQL(T artifactKey) {
         StringBuilder sb = new StringBuilder();
         sb.append("SELECT ");
         String[] cols = columnMap.get(Artifact.class);
@@ -751,7 +750,7 @@ public class BaseSQLGenerator implements SQLGenerator {
         sb.append(getTable(Artifact.class));
         sb.append(" WHERE ");
         sb.append("uri='");
-        sb.append(artifactURI.toString());
+        sb.append(artifactKey.toString());
         sb.append("'");
         return sb.toString();
     }
@@ -976,6 +975,16 @@ public class BaseSQLGenerator implements SQLGenerator {
             return "dataReadAccessGroups";
         }
         return "metaReadAccessGroups";
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T extends EntityGet> T getEntityGet(Class<? extends CaomEntity> c, Object key) {
+        if (Artifact.class.equals(c)) {
+            return (T) new ArtifactGet(key);
+        }
+
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -1720,6 +1729,40 @@ public class BaseSQLGenerator implements SQLGenerator {
             if (sb != null) {
                 log.debug(sb.toString());
             }
+        }
+    }
+
+    private class ArtifactGet<T> implements EntityGet<Artifact>, PreparedStatementCreator {
+
+        final T key;
+
+        ArtifactGet(final T key) {
+            this.key = key;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public List<Artifact> execute(final JdbcTemplate jdbc) {
+            return jdbc.query(this, getArtifactMapper());
+        }
+
+        /**
+         * Create a statement in this connection. Allows implementations to use
+         * PreparedStatements. The JdbcTemplate will close the created statement.
+         *
+         * @param conn Connection to use to create statement
+         * @return a prepared statement
+         * @throws SQLException there is no need to catch SQLExceptions
+         *                      that may be thrown in the implementation of this method.
+         *                      The JdbcTemplate class will handle them.
+         */
+        @Override
+        public PreparedStatement createPreparedStatement(Connection conn) throws SQLException {
+            final String sql = getSelectArtifactSQL(key);
+
+            log.debug(sql);
+
+            return conn.prepareStatement(sql);
         }
     }
 

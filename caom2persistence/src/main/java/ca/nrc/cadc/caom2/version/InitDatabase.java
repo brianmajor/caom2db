@@ -120,6 +120,8 @@ public class InitDatabase {
     private final String database;
     private final String schema;
 
+    private static final boolean SKIP_INIT = Boolean.parseBoolean(System.getProperty("test.db.skip_init"));
+
     public InitDatabase(DataSource dataSource, String database, String schema) {
         this.dataSource = dataSource;
         this.database = database;
@@ -133,80 +135,86 @@ public class InitDatabase {
      */
     public boolean doInit() {
         log.debug("doInit: " + MODEL_NAME + " " + MODEL_VERSION);
-        long t = System.currentTimeMillis();
-        String prevVersion = null;
 
-        TransactionManager txn = new DatabaseTransactionManager(dataSource);
-        JdbcTemplate jdbc = new JdbcTemplate(dataSource);
-
-        try {
-            // get current ModelVersion
-            ModelVersionDAO vdao = new ModelVersionDAO(dataSource, database, schema);
-            ModelVersion cur = vdao.get(MODEL_NAME);
-            log.debug("found: " + cur);
-            prevVersion = cur.version;
-
-            // select SQL to execute
-            String[] ddls = CREATE_SQL; // default
-            boolean upgrade = false;
-            if (cur.version != null && MODEL_VERSION.equals(cur.version)) {
-                log.debug("doInit: already up to date - nothing to do");
-                return false;
-            }
-            if (cur.version != null && cur.version.equals(PREV_MODEL_VERSION)) {
-                ddls = UPGRADE_SQL;
-                upgrade = true;
-            } else if (cur.version != null) {
-                throw new UnsupportedOperationException("doInit: version upgrade not supported: " + cur.version + " -> " + MODEL_VERSION);
-            }
-
-            // start transaction
-            txn.startTransaction();
-
-            // execute SQL
-            for (String fname : ddls) {
-                log.info("process file: " + fname);
-                List<String> statements = parseDDL(fname, schema);
-                for (String sql : statements) {
-                    if (upgrade) {
-                        log.info("execute:\n" + sql);
-                    } else {
-                        log.debug("execute:\n" + sql);
-                    }
-                    jdbc.execute(sql);
-                }
-            }
-            // update ModelVersion
-            cur.version = MODEL_VERSION;
-            vdao.put(cur);
-
-            // commit transaction
-            txn.commitTransaction();
+        if (SKIP_INIT) {
             return true;
-        } catch (Exception ex) {
-            log.debug("epic fail", ex);
+        } else {
+            long t = System.currentTimeMillis();
+            String prevVersion = null;
 
-            if (txn.isOpen()) {
-                try {
-                    txn.rollbackTransaction();
-                } catch (Exception oops) {
-                    log.error("failed to rollback transaction", oops);
-                }
-            }
-            throw new RuntimeException("failed to init database", ex);
-        } finally {
-            // check for open transaction
-            if (txn.isOpen()) {
-                log.error("BUG: open transaction in finally");
-                try {
-                    txn.rollbackTransaction();
-                } catch (Exception ex) {
-                    log.error("failed to rollback transaction in finally", ex);
-                }
-            }
+            TransactionManager txn = new DatabaseTransactionManager(dataSource);
+            JdbcTemplate jdbc = new JdbcTemplate(dataSource);
 
-            long dt = System.currentTimeMillis() - t;
-            log.debug("doInit: " + MODEL_NAME + " " + prevVersion + " to " + MODEL_VERSION + " " + dt + "ms");
+            try {
+                // get current ModelVersion
+                ModelVersionDAO vdao = new ModelVersionDAO(dataSource, database, schema);
+                ModelVersion cur = vdao.get(MODEL_NAME);
+                log.debug("found: " + cur);
+                prevVersion = cur.version;
+
+                // select SQL to execute
+                String[] ddls = CREATE_SQL; // default
+                boolean upgrade = false;
+                if (cur.version != null && MODEL_VERSION.equals(cur.version)) {
+                    log.debug("doInit: already up to date - nothing to do");
+                    return false;
+                }
+                if (cur.version != null && cur.version.equals(PREV_MODEL_VERSION)) {
+                    ddls = UPGRADE_SQL;
+                    upgrade = true;
+                } else if (cur.version != null) {
+                    throw new UnsupportedOperationException("doInit: version upgrade not supported: " + cur.version + " -> " + MODEL_VERSION);
+
+                }
+
+                // start transaction
+                txn.startTransaction();
+
+                // execute SQL
+                for (String fname : ddls) {
+                    log.info("process file: " + fname);
+                    List<String> statements = parseDDL(fname, schema);
+                    for (String sql : statements) {
+                        if (upgrade) {
+                            log.info("execute:\n" + sql);
+                        } else {
+                            log.debug("execute:\n" + sql);
+                        }
+                        jdbc.execute(sql);
+                    }
+                }
+                // update ModelVersion
+                cur.version = MODEL_VERSION;
+                vdao.put(cur);
+
+                // commit transaction
+                txn.commitTransaction();
+                return true;
+            } catch (Exception ex) {
+                log.debug("epic fail", ex);
+
+                if (txn.isOpen()) {
+                    try {
+                        txn.rollbackTransaction();
+                    } catch (Exception oops) {
+                        log.error("failed to rollback transaction", oops);
+                    }
+                }
+                throw new RuntimeException("failed to init database", ex);
+            } finally {
+                // check for open transaction
+                if (txn.isOpen()) {
+                    log.error("BUG: open transaction in finally");
+                    try {
+                        txn.rollbackTransaction();
+                    } catch (Exception ex) {
+                        log.error("failed to rollback transaction in finally", ex);
+                    }
+                }
+
+                long dt = System.currentTimeMillis() - t;
+                log.debug("doInit: " + MODEL_NAME + " " + prevVersion + " to " + MODEL_VERSION + " " + dt + "ms");
+            }
         }
     }
     
