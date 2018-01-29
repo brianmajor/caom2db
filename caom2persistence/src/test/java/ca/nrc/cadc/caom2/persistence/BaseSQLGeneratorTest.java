@@ -215,7 +215,8 @@ public class BaseSQLGeneratorTest
         {
             
             URI uri = new URI("cadc:artifactid");
-            String sql = gen.getSelectArtifactSQL(uri);
+            String sql = gen.getSelectArtifactSQL();
+            sql = sql.replace("?", "'" + uri.toString() + "'");
             Assert.assertNotNull(sql);
             log.debug("SQL [" + sql.length() + "] " + sql);
             Assert.assertTrue(sql.contains(uri.toString()));
@@ -373,5 +374,11 @@ public class BaseSQLGeneratorTest
             log.error("unexpected exception", unexpected);
             Assert.fail("unexpected exception: " + unexpected);
         }
+    }
+
+    @Test
+    public void getEntityGet() {
+        final URI uri = URI.create("caom://myobservation/plane/artifactid");
+        gen.getEntityGet(Artifact.class, uri);
     }
 }
