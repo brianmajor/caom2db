@@ -72,7 +72,6 @@ package ca.nrc.cadc.caom2.artifact;
 import java.util.Comparator;
 import java.util.Date;
 
-
 /**
  * Class to hold meta information about an artifact.
  * 
@@ -88,7 +87,6 @@ public class ArtifactMetadata {
     public String collection;
     public Date lastModified;
     public String storageID;
-    public Date releaseDate;
     
     public boolean equals(Object o) {
         if (o instanceof ArtifactMetadata) {

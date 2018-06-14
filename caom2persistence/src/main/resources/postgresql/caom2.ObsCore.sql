@@ -58,7 +58,7 @@ create view <schema>.ObsCore
     position_bounds_points,
 
 -- for CAOM access control
-    dataRelease, dataReadAccessGroups,
+    dataRelease,
     planeID,
     metaRelease, metaReadAccessGroups
 )
@@ -120,11 +120,12 @@ AS SELECT
 
 -- hidden columns    
     p.position_bounds_points,
-    p.dataRelease, p.dataReadAccessGroups,
+    p.dataRelease,
     p.planeID,
     p.metaRelease, p.metaReadAccessGroups
 
 FROM <schema>.Observation o JOIN <schema>.Plane p ON o.obsID=p.obsID
 WHERE o.intent = 'science' 
   AND p.calibrationLevel IS NOT NULL
+  AND p.dataProductType != 'catalog'
 ;
